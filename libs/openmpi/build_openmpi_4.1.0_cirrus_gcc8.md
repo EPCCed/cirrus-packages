@@ -54,8 +54,8 @@ Build and install OpenMPI for GPU (CUDA 10.1)
 
 ```bash
 module unload gcc
-module load nvidia/cuda-10.1
-module load nvidia/mathlibs-10.1
+module load nvidia/cuda-11.2
+module load nvidia/mathlibs-11.2
 module swap gcc gcc/8.2.0
 
 ./configure CC=gcc CXX=g++ FC=gfortran \
@@ -64,40 +64,13 @@ module swap gcc gcc/8.2.0
   --enable-mpi1-compatibility --enable-mpi-fortran \
   --enable-mpi-interface-warning --enable-mpirun-prefix-by-default \
   --with-slurm \
-  --with-ucx=/lustre/sw/ucx/1.9.0-cuda-10.1 \
+  --with-ucx=/lustre/sw/ucx/1.9.0-cuda-11.2 \
   --with-pmi=/lustre/sw/pmi2 --with-pmi-libdir=/lustre/sw/pmi2/lib \
-  --with-cuda=/lustre/sw/nvidia/hpcsdk/Linux_x86_64/cuda/10.1 \
+  --with-cuda=${CUDAROOT} \
   --with-libevent=/lustre/sw/libevent/2.1.12 \
-  --prefix=/lustre/sw/${OPENMPI_LABEL}/${OPENMPI_VERSION}-cuda-10.1
+  --prefix=/lustre/sw/${OPENMPI_LABEL}/${OPENMPI_VERSION}-cuda-11.2
 
 make
 make install
 make clean
-```
-
-
-Build and install OpenMPI for GPU (CUDA 10.2)
----------------------------------------------
-
-```bash
-module unload gcc
-module swap nvidia/cuda-10.1 nvidia/cuda-10.2
-module swap nvidia/mathlibs-10.1 nvidia/mathlibs-10.2
-module swap gcc gcc/8.2.0
-
-./configure CC=gcc CXX=g++ FC=gfortran \
-  CFLAGS="-I/lustre/sw/pmi2/include" \
-  LDFLAGS="-L/lustre/sw/pmi2/lib" \
-  --enable-mpi1-compatibility --enable-mpi-fortran \
-  --enable-mpi-interface-warning --enable-mpirun-prefix-by-default \
-  --with-slurm \
-  --with-ucx=/lustre/sw/ucx/1.9.0-cuda-10.2 \
-  --with-pmi=/lustre/sw/pmi2 --with-pmi-libdir=/lustre/sw/pmi2/lib \
-  --with-cuda=/lustre/sw/nvidia/hpcsdk/Linux_x86_64/cuda/10.2 \
-  --with-libevent=/lustre/sw/libevent/2.1.12 \
-  --prefix=/lustre/sw/${OPENMPI_LABEL}/${OPENMPI_VERSION}-cuda-10.2
-
-make
-make install
-make clean 
 ```
