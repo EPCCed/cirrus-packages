@@ -1,7 +1,7 @@
-Instructions for building PyFR 1.10.0 on Cirrus
-===============================================
+Instructions for building PyFR 1.12 on Cirrus
+=============================================
 
-These instructions are for building PyFR 1.10.0 on Cirrus (SGI ICE XA, Intel Xeon Broadwell (CPU) and Cascade Lake (GPU)) using Python 3.8.
+These instructions are for building PyFR 1.12 on Cirrus (SGI ICE XA, Intel Xeon Broadwell (CPU) and Cascade Lake (GPU)) using Python 3.8.
 
 
 Setup initial environment
@@ -20,7 +20,6 @@ Create and setup a Miniconda3 virtual environment
 
 ```bash
 PYTHON_LABEL=py38
-PYTHON_LABEL_LONG=python${PYTHON_LABEL:2:1}.${PYTHON_LABEL:3:1}
 
 MINICONDA_TAG=miniconda
 MINICONDA_LABEL=${MINICONDA_TAG}3
@@ -52,6 +51,8 @@ rm ./sed.sh
 
 . ${MINICONDA_ROOT}/activate.sh
 conda update -y -n root --all
+
+conda deactivate
 ```
 
 
@@ -61,14 +62,21 @@ Build and install mpi4py using OpenMPI 4.1.0
 ```bash
 cd ${PRFX}
 
+PYTHON_LABEL=py38
+PYTHON_LABEL_LONG=python${PYTHON_LABEL:2:1}.${PYTHON_LABEL:3:1}
+
+MINICONDA_VERSION=4.9.2
+CUDA_VERSION=11.2
+OPENMPI_VERSION=4.1.0
+
+module load openmpi/${OPENMPI_VERSION}-cuda-${CUDA_VERSION}
+
+MINICONDA_ROOT=${PRFX}/miniconda3/${MINICONDA_VERSION}-${PYTHON_LABEL}
+. ${MINICONDA_ROOT}/activate.sh
+
 MPI4PY_LABEL=mpi4py
 MPI4PY_VERSION=3.0.3
 MPI4PY_NAME=${MPI4PY_LABEL}-${MPI4PY_VERSION}
-
-OPENMPI_VERSION=4.1.0
-CUDA_VERSION=10.2
-
-module load openmpi/${OPENMPI_VERSION}-cuda-${CUDA_VERSION}
 
 mkdir -p ${MPI4PY_LABEL}
 cd ${MPI4PY_LABEL}
@@ -80,76 +88,54 @@ rm ${MPI4PY_VERSION}.tar.gz
 cd ${MPI4PY_NAME}
 
 MPI4PY_ROOT=${PRFX}/${MPI4PY_LABEL}/${MPI4PY_VERSION}-ompi-${OPENMPI_VERSION}
-python setup.py clean --all
 python setup.py build
 python setup.py install --prefix=${MPI4PY_ROOT}
+python setup.py clean --all
 
 echo "ROOT=${MPI4PY_ROOT}" > ${MPI4PY_ROOT}/env.sh
 echo "export LIBRARY_PATH=\${ROOT}/lib:\${LIBRARY_PATH}" >> ${MPI4PY_ROOT}/env.sh
 echo "export LD_LIBRARY_PATH=\${ROOT}/lib:\${LD_LIBRARY_PATH}" >> ${MPI4PY_ROOT}/env.sh
 echo "export PYTHONPATH=\${ROOT}/lib/${PYTHON_LABEL_LONG}/site-packages:\${PYTHONPATH}" >> ${MPI4PY_ROOT}/env.sh
 . ${MPI4PY_ROOT}/env.sh
+
+conda deactivate
 ```
 
 
-Build and install pycuda
-------------------------
+Install PyFR and supporting packages
+------------------------------------
 
 ```bash
 cd ${PRFX}
 
-PYCUDA_LABEL=pycuda
-PYCUDA_VERSION=2020.1
-PYCUDA_NAME=${PYCUDA_LABEL}-${PYCUDA_VERSION}
+PYTHON_LABEL=py38
 
-CUDA_VERSION=10.2
+MINICONDA_VERSION=4.9.2
+CUDA_VERSION=11.2
+OPENMPI_VERSION=4.1.0
+MPI4PY_VERSION=3.0.3
 
 module load nvidia/cuda-${CUDA_VERSION}
 module load nvidia/mathlibs-${CUDA_VERSION}
-module load boost/1.73.0
+module load openmpi/${OPENMPI_VERSION}-cuda-${CUDA_VERSION}
 
-mkdir -p ${PYCUDA_LABEL}
-cd ${PYCUDA_LABEL}
+MINICONDA_ROOT=${PRFX}/miniconda3/${MINICONDA_VERSION}-${PYTHON_LABEL}
+. ${MINICONDA_ROOT}/activate.sh
 
-wget https://files.pythonhosted.org/packages/46/61/47d3235a4c13eec5a5f03594ddb268f4858734e02980afbcd806e6242fa5/${PYCUDA_NAME}.tar.gz
-tar -xvzf ${PYCUDA_NAME}.tar.gz
-rm ${PYCUDA_NAME}.tar.gz
+MPI4PY_VERSION=3.0.3
+MPI4PY_ROOT=${PRFX}/mpi4py/${MPI4PY_VERSION}-ompi-${OPENMPI_VERSION}
+if [[ ${LD_LIBRARY_PATH} != *"${MPI4PY_ROOT}"* ]]; then
+  . ${MPI4PY_ROOT}/env.sh
+fi
 
-cd ${PYCUDA_NAME}
-
-python configure.py --cuda-root=${CUDAROOT} --no-use-shipped-boost --boost-python-libname=boost_python-py36 --ldflags="-L/lustre/sw/nvidia/hpcsdk/Linux_x86_64/20.9/cuda/11.0/targets/x86_64-linux/lib/stubs"
-make
-make install
-```
-
-Notice that the python configure command for pycuda has two anomalous settings, the `py36` suffix used for the boost python library name and the `11.0` version tag used in the path to the CUDA stub libraries.
-These are not mistakes merely workarounds required to get pycuda to build. These settings do not appear to compromise the PyFR installation (e.g., scaling runs perform as expected).
-
-
-Install other python packages required by PyFR
-----------------------------------------------
-
-```bash
 pip install appdirs
 pip install gimmik
 pip install h5py
 pip install mako
-pip install mpi4py
 pip install numpy
 pip install pytools
-```
 
+pip install pyfr==1.12.1
 
-Install PyFR itself
--------------------
-```bash
-pip install pyfr
-```
-
-
-Finish by deactivating the virtual environment
-----------------------------------------------
-
-```bash
 conda deactivate
 ```
